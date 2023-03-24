@@ -33,13 +33,21 @@ function ContentEditor() {
 
 
     const contentMarkup = {
-        __html: highlightedContent.join(''),
+        __html: highlightedContent.join('').replace(/(?:\r\n|\r|\n)/g, '<br>'),
     };
 
-
+    // GPT says: 
+    // In the handleBlur function, I've updated the code to replace <div> tags (used by browsers for newlines in contentEditable elements) 
+    // with <br> tags and remove the closing </div> tags. This way, the newlines are preserved correctly when the component loses focus.
     const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
-        setContent(event.target.innerText);
-    }
+        const text = event.target.innerHTML
+            .replace(/<div>/g, '<br>')
+            .replace(/<\/div>/g, '');
+
+        console.log('text with newlines fixed ', text);
+        setContent(text);
+    };
+
 
     console.log('content Markup', contentMarkup);
     return (
