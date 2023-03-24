@@ -41,8 +41,9 @@ function ContentEditor() {
     // with <br> tags and remove the closing </div> tags. This way, the newlines are preserved correctly when the component loses focus.
     const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
         const text = event.target.innerHTML
-            .replace(/<div>/g, '<br>')
-            .replace(/<\/div>/g, '');
+            .replace(/<div>/g, '\n')
+            .replace(/<\/div>/g, '')
+            .replace(/<br>/g, '\n');
 
         console.log('text with newlines fixed ', text);
         setContent(text);
