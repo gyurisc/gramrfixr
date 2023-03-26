@@ -9,7 +9,7 @@ function DraftPage() {
         <div className="mx-auto flex min-h-screen max-w-5xl flex-col pt-8 sm:pt-12">
             <Header />
             <main >
-                <DraftEditor />
+                <DraftEditor words={["framework", "included", "rendering", "editor"]} />
             </main>
             <Footer />
         </ div>
