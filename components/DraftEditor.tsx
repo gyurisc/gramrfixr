@@ -63,9 +63,16 @@ const WordDecorator = (props: any) => {
         setShowContextMenu(false);
     };
 
+    // Changes start here
+    const inlineStyle: DraftInlineStyle = props.contentState
+        .getBlockForKey(props.blockKey)
+        .getInlineStyleAt(props.start);
+
+    const underlineRedClass = 'text-red-500 underline';
+
     return (
         <span
-            className="underline-red cursor-pointer"
+            className={inlineStyle.has('UNDERLINE_RED') ? underlineRedClass : ''}
             onClick={handleWordClick}
             onContextMenu={(event) => {
                 event.preventDefault();
@@ -97,6 +104,7 @@ const DraftEditor: React.FC<Props> = ({ styleMap, words }) => {
             strategy: (contentBlock: ContentBlock, callback: (start: number, end: number) => void) => {
                 if (words) {
                     words.forEach((word) => {
+                        console.log("adding decorator for word: ", word);
                         const text = contentBlock.getText();
                         let start = 0;
                         let index = text.indexOf(word, start);
@@ -115,7 +123,7 @@ const DraftEditor: React.FC<Props> = ({ styleMap, words }) => {
     const initialText = `The Draft framework includes a handful of CSS resources intended for use with the editor, available in a single file via the build, Draft.css.
 
     This CSS should be included when rendering the editor, as these styles set defaults for text alignment, spacing, and other important features. Without it, you may encounter issues with block positioning, alignment, and cursor behavior.
-    
+
     If you choose to write your own CSS independent of Draft.css, you will most likely need to replicate much of the default styling.
     `;
 
@@ -140,6 +148,7 @@ const DraftEditor: React.FC<Props> = ({ styleMap, words }) => {
     };
 
     const handleToggleInlineStyle = (inlineStyle: string): void => {
+        console.log('handleToggleInlineStyle: ', inlineStyle)
         const newEditorState = RichUtils.toggleInlineStyle(editorState, inlineStyle);
         setEditorState(newEditorState);
 
