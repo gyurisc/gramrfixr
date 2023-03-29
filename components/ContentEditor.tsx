@@ -20,7 +20,7 @@ function ContentEditor() {
     const highlightWords = ['error', 'mistake'];
 
     const highlightedContent = content
-        .split(' ')
+        .split(/\s+/)
         .map((word, index) => {
             console.log('highlightedWords: ', word, ' index: ', index);
             if (highlightWords.includes(word.toLowerCase())) {
