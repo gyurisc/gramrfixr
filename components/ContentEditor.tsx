@@ -15,8 +15,6 @@ const HighlightedWord: React.FC<HighlightedWordProps> = ({ children }) => (
 
 function ContentEditor() {
     const [content, setContent] = useState('');
-    // const editableDivRef = useRef<HTMLDivElement>(null);
-
     const highlightWords = ['error', 'mistake'];
 
     const highlightedContent = content
