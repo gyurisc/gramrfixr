@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Configuration, OpenAIApi, ChatCompletion } from "openai";
+import { Configuration, OpenAIApi } from "openai";
 
 if (!process.env.OPENAI_API_KEY) {
     throw new Error("Missing env var from OpenAI");
@@ -25,7 +25,7 @@ function generatePrompt(message: string) {
 }
 
 export default async function handler(
-    req: Request): Promise<Response> {
+    req: Request) {
     try {
         const { message } = (await req.json()) as {
             message?: string;
@@ -50,7 +50,8 @@ export default async function handler(
 
         console.log(completion.data.choices[0].message);
 
-        return new Response(completion.data.choices[0].message, { status: 200 });
+        const response_message = (completion?.data?.choices[0]?.message ?? "{}").toString();
+        return new Response(response_message, { status: 200 });
     }
     catch (err: any) {
         if (err.resp) {
@@ -60,5 +61,7 @@ export default async function handler(
         else {
             console.log(err);
         }
+
+        return new Response(err, { status: 500 });
     }
 }
