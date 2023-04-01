@@ -34,7 +34,7 @@ export default async function handler(
 
         if (!content) {
             console.log('Missing content');
-            return res.status(500).json("Missing Content");
+            return res.status(500).json({ result: "Missing Content" });
         }
 
         let prompt = generatePrompt(content);

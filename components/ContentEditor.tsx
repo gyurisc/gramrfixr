@@ -19,10 +19,12 @@ function ContentEditor() {
     const [busy, setBusy] = useState(false);
     const highlightWords = ['error', 'mistake'];
 
-    const editorRef = useRef(null);
+    const editorRef = useRef<any>();
 
     const handleChange = () => {
-        setContent(editorRef.current.innerHTML);
+        if (editorRef.current != null) {
+            setContent(editorRef.current.innerHTML);
+        }
     };
 
     const checkGrammar = async (event: React.MouseEvent<HTMLButtonElement>) => {
