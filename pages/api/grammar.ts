@@ -25,17 +25,19 @@ function generatePrompt(message: string) {
 }
 
 export default async function handler(
-    req: Request) {
+    req: NextApiRequest,
+    res: NextApiResponse<Data>
+) {
+    console.log('/api/grammar', req.body);
     try {
-        const { message } = (await req.json()) as {
-            message?: string;
-        };
+        const content = req.body.content;
 
-        if (!message) {
-            return new Response("Missing message in ther request", { status: 400 });
+        if (!content) {
+            console.log('Missing content');
+            return res.status(500).json("Missing Content");
         }
 
-        let prompt = generatePrompt(message);
+        let prompt = generatePrompt(content);
 
         const completion = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
@@ -48,10 +50,11 @@ export default async function handler(
             n: 1,
         });
 
-        console.log(completion.data.choices[0].message);
+        const response_content = (completion?.data?.choices[0]?.message?.content ?? "{}").toString();
+        const response = JSON.parse(response_content);
 
-        const response_message = (completion?.data?.choices[0]?.message ?? "{}").toString();
-        return new Response(response_message, { status: 200 });
+        console.log('api response: ', response);
+        return res.status(200).json({ result: response });
     }
     catch (err: any) {
         if (err.resp) {

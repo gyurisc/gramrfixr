@@ -4,10 +4,13 @@ import { Inter } from 'next/font/google'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import ContentEditor from '@/components/ContentEditor'
+import { useState } from 'react'
+import LoadingDots from '@/components/LoadingDots'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
+
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col pt-8 sm:pt-12">
       <Head>
