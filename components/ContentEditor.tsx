@@ -7,6 +7,10 @@ interface HighlightedWordProps {
     children: string;
 }
 
+interface Correction {
+    original: string;
+    corrrection: string;
+}
 const HighlightedWord: React.FC<HighlightedWordProps> = ({ children }) => (
     <span className="relative">
         {children}
@@ -17,7 +21,9 @@ const HighlightedWord: React.FC<HighlightedWordProps> = ({ children }) => (
 function ContentEditor() {
     const [content, setContent] = useState('');
     const [busy, setBusy] = useState(false);
-    const highlightWords = ['error', 'mistake'];
+
+    const corrections = [];
+    const improvements = [];
 
     const editorRef = useRef<any>();
 
@@ -31,7 +37,6 @@ function ContentEditor() {
         event.preventDefault();
 
         const cleanText = sanitizeHtml(content, { allowedTags: [], allowedAttributes: {} });
-        console.log('checkGrammar: ', cleanText);
 
         if (!cleanText) {
             console.log('content is missing: ', cleanText);
@@ -50,6 +55,9 @@ function ContentEditor() {
 
         const data = await response.json();
         console.log('Received response: ', data);
+
+        const improvements = data.improvements;
+        const corrections = data.corrections;
 
         if (!response.ok) {
             console.log('error ', response.statusText);
