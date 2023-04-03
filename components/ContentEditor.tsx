@@ -22,8 +22,8 @@ function ContentEditor() {
     const [content, setContent] = useState('');
     const [busy, setBusy] = useState(false);
 
-    const corrections = [];
-    const improvements = [];
+    const [corrections, setCorrections] = useState([]);
+    const [improvements, setImprovements] = useState([]);
 
     const editorRef = useRef<any>();
 
