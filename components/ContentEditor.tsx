@@ -21,7 +21,6 @@ const HighlightedWord: React.FC<HighlightedWordProps> = ({ children }) => (
 function ContentEditor() {
     const [content, setContent] = useState('');
     const [busy, setBusy] = useState(false);
-
     const [corrections, setCorrections] = useState([]);
     const [improvements, setImprovements] = useState([]);
 
@@ -53,19 +52,78 @@ function ContentEditor() {
             body: JSON.stringify({ content: cleanText }),
         });
 
-        const data = await response.json();
-        console.log('Received response: ', data);
-
-        const improvements = data.improvements;
-        const corrections = data.corrections;
-
         if (!response.ok) {
             console.log('error ', response.statusText);
-            throw new Error(response.statusText);
+        } else {
+
+            const data = await response.json();
+            console.log('Received response: ', data);
+
+            if (data.result.improvements.length >= 0) {
+                setImprovements(data.result.improvements);
+            }
+
+            if (data.result.corrections.length >= 0) {
+                setCorrections(data.result.corrections);
+            }
+
         }
 
         setBusy(false);
     };
+
+    const handleBlur = () => {
+        if (editorRef.current != null) {
+            editorRef.current.innerHTML = `
+            Biology is a really unique scient to study There are alott of different aspects to it such as ecology genetics and physiology One of the most interesitng things to learn about in biology is animals and the way they behave For example did you know that some birds give hugs to their babies to keep them warm That's so cute <br>
+
+            Another important aspect of biology is understanding the structure and function of different living things Cells are the basic building blocks of all living organisms and they are resposible for carrying out all of the processes neccessary for life Studying the biology of cells is important for understanding everything from how the body works to how diseases develop <br>
+            `;
+
+            const corr = [
+                {
+                    "original": "scient",
+                    "start": 23,
+                    "end": 29,
+                    "correction": "science"
+                },
+                {
+                    "original": "alott",
+                    "start": 51,
+                    "end": 56,
+                    "correction": "a lot"
+                },
+                {
+                    "original": "interesitng",
+                    "start": 91,
+                    "end": 101,
+                    "correction": "interesting"
+                },
+                {
+                    "original": "resposible",
+                    "start": 226,
+                    "end": 235,
+                    "correction": "responsible"
+                },
+                {
+                    "original": "neccessary",
+                    "start": 252,
+                    "end": 262,
+                    "correction": "necessary"
+                }
+            ];
+
+            let modifiedText = editorRef.current.innerHTML;
+            for (let i = 0; i < corr.length; i++) {
+                const { original, start, end, correction } = corr[i];
+
+                // replace the original word with the correction
+                modifiedText = modifiedText.replace(original, `<u style="border-bottom: 2px solid red; text-decoration: none;">${original}</u>`);
+            }
+
+            editorRef.current.innerHTML = modifiedText;
+        }
+    }
 
     return (
         <div>
@@ -75,6 +133,7 @@ function ContentEditor() {
                 contentEditable="true"
                 suppressContentEditableWarning
                 onInput={handleChange}
+                onBlur={handleBlur}
             />
             <div className='sm:px-4 px-2'>
                 {!busy && (
