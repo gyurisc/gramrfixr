@@ -105,7 +105,7 @@ function ContentEditor() {
 
             let modifiedText = editorRef.current.innerHTML;
             for (let i = 0; i < corr.length; i++) {
-                const { original, start, end, correction } = corr[i];
+                const { original, correction } = corr[i];
 
                 // replace the original word with the correction
                 modifiedText = modifiedText.replace(original, `<u style="border-bottom: 2px solid red; text-decoration: none;">${original}</u>`);
