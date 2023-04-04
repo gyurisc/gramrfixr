@@ -19,7 +19,8 @@ type Data = {
 function generatePrompt(message: string) {
     return `Pretend that you are an English Grammar teacher. 
     Correct the grammatical mistakes in this text by replying in JSON. 
-    The JSON should contain a corrections array and each correction should contain the original word that needs to be corrected, the start and end position of the word in the text, and the recommended correction for the word as well, also if it is possible to provide an array of improvements to improve my text. The output should be json. 
+    The JSON should contain a corrections array and each correction should contain the original word that needs to be corrected, and the recommended correction for the word as well. 
+    The output should be json. 
     
     Here is my text: ${message}.`;
 }

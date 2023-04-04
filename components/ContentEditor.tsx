@@ -83,32 +83,22 @@ function ContentEditor() {
             const corr = [
                 {
                     "original": "scient",
-                    "start": 23,
-                    "end": 29,
                     "correction": "science"
                 },
                 {
                     "original": "alott",
-                    "start": 51,
-                    "end": 56,
                     "correction": "a lot"
                 },
                 {
                     "original": "interesitng",
-                    "start": 91,
-                    "end": 101,
                     "correction": "interesting"
                 },
                 {
                     "original": "resposible",
-                    "start": 226,
-                    "end": 235,
                     "correction": "responsible"
                 },
                 {
                     "original": "neccessary",
-                    "start": 252,
-                    "end": 262,
                     "correction": "necessary"
                 }
             ];
