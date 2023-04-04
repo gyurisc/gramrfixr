@@ -9,7 +9,7 @@ interface HighlightedWordProps {
 
 interface Correction {
     original: string;
-    corrrection: string;
+    corrrected: string;
 }
 const HighlightedWord: React.FC<HighlightedWordProps> = ({ children }) => (
     <span className="relative">
@@ -22,7 +22,6 @@ function ContentEditor() {
     const [content, setContent] = useState('');
     const [busy, setBusy] = useState(false);
     const [corrections, setCorrections] = useState([]);
-    const [improvements, setImprovements] = useState([]);
 
     const editorRef = useRef<any>();
 
@@ -59,18 +58,65 @@ function ContentEditor() {
             const data = await response.json();
             console.log('Received response: ', data);
 
-            if (data.result.improvements.length >= 0) {
-                setImprovements(data.result.improvements);
-            }
-
             if (data.result.corrections.length >= 0) {
                 setCorrections(data.result.corrections);
             }
 
+            highlightCorrections();
         }
 
         setBusy(false);
     };
+
+    function highlightCorrections() {
+        if (editorRef.current != null) {
+            editorRef.current.innerHTML = content;
+
+            console.log('highlightCorrections: ', corrections);
+            let modifiedText = editorRef.current.innerHTML;
+            for (let i = 0; i < corrections.length; i++) {
+                const { original, corrected } = corrections[i];
+
+                console.log('original: ', original);
+                console.log('corrected: ', corrected);
+
+                // replace the original word with the correction
+                modifiedText = modifiedText.replace(original, `
+                    <u style="border-bottom: 2px solid red; text-decoration: none; cursor: pointer;"
+                        onclick="showMenu(event, '${corrected}')"
+                    >
+                    ${original}
+                </u>`);
+            }
+
+            window.showMenu = function (event: any, corrected: string) {
+                const menu = document.createElement('div');
+                menu.style.position = 'absolute';
+                menu.style.top = `${event.clientY}px`;
+                menu.style.left = `${event.clientX}px`;
+                menu.style.backgroundColor = 'white';
+                menu.style.border = '1px solid black';
+                menu.style.padding = '5px';
+                menu.style.borderRadius = '5px';
+                menu.style.zIndex = '1000';
+                menu.textContent = `Did you mean ${corrected}?`;
+
+                document.body.appendChild(menu);
+
+                const closeMenu = () => {
+                    document.body.removeChild(menu);
+                    document.removeEventListener('click', closeMenu);
+                };
+
+                setTimeout(function () {
+                    document.addEventListener('click', closeMenu);
+                }, 0);
+
+            }
+
+            editorRef.current.innerHTML = modifiedText;
+        }
+    }
 
     const handleBlur = () => {
         if (editorRef.current != null) {
@@ -83,32 +129,64 @@ function ContentEditor() {
             const corr = [
                 {
                     "original": "scient",
-                    "correction": "science"
+                    "corrected": "science"
                 },
                 {
                     "original": "alott",
-                    "correction": "a lot"
+                    "corrected": "a lot"
                 },
                 {
                     "original": "interesitng",
-                    "correction": "interesting"
+                    "corrected": "interesting"
                 },
                 {
                     "original": "resposible",
-                    "correction": "responsible"
+                    "corrected": "responsible"
                 },
                 {
                     "original": "neccessary",
-                    "correction": "necessary"
+                    "corrected": "necessary"
                 }
             ];
 
             let modifiedText = editorRef.current.innerHTML;
             for (let i = 0; i < corr.length; i++) {
-                const { original, correction } = corr[i];
+                const { original, corrected } = corr[i];
 
-                // replace the original word with the correction
-                modifiedText = modifiedText.replace(original, `<u style="border-bottom: 2px solid red; text-decoration: none;">${original}</u>`);
+                // replace the original word with the corrected
+                modifiedText = modifiedText.replace(original, `
+                    <u style="border-bottom: 2px solid red; text-decoration: none; cursor: pointer;"
+                        data-original="${original}"
+                        data-correction="${corrected}"
+                        onclick="showMenu(event, '${corrected}')"
+                    >
+                    ${original}
+                </u>`);
+            }
+
+            window.showMenu = function (event: any, corrected: string) {
+                const menu = document.createElement('div');
+                menu.style.position = 'absolute';
+                menu.style.top = `${event.clientY}px`;
+                menu.style.left = `${event.clientX}px`;
+                menu.style.backgroundColor = 'white';
+                menu.style.border = '1px solid black';
+                menu.style.padding = '5px';
+                menu.style.borderRadius = '5px';
+                menu.style.zIndex = '1000';
+                menu.textContent = `Did you mean ${corrected}?`;
+
+                document.body.appendChild(menu);
+
+                const closeMenu = () => {
+                    document.body.removeChild(menu);
+                    document.removeEventListener('click', closeMenu);
+                };
+
+                setTimeout(function () {
+                    document.addEventListener('click', closeMenu);
+                }, 0);
+
             }
 
             editorRef.current.innerHTML = modifiedText;
@@ -123,7 +201,7 @@ function ContentEditor() {
                 contentEditable="true"
                 suppressContentEditableWarning
                 onInput={handleChange}
-                onBlur={handleBlur}
+            // onBlur={handleBlur}
             />
             <div className='sm:px-4 px-2'>
                 {!busy && (
@@ -147,4 +225,4 @@ function ContentEditor() {
     );
 }
 
-export default ContentEditor
+export default ContentEditor;
