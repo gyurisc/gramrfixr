@@ -166,6 +166,8 @@ function ContentEditor() {
 
     }
 
+    // maybe to use useEffect here, so it only runs once 
+    // or use dynamic import
     if (typeof window !== 'undefined') {
 
         window.showMenuPrototype = showMenuPrototype;
