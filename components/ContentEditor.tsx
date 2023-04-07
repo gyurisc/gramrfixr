@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import LoadingDots from './LoadingDots';
 import sanitizeHtml from 'sanitize-html'
-
+import ContextMenu from './ContextMenu';
 interface HighlightedWordProps {
     key: number;
     children: string;
@@ -11,6 +11,7 @@ interface Correction {
     original: string;
     corrected: string;
 }
+
 const HighlightedWord: React.FC<HighlightedWordProps> = ({ children }) => (
     <span className="relative">
         {children}
@@ -22,6 +23,8 @@ function ContentEditor() {
     const [content, setContent] = useState('');
     const [busy, setBusy] = useState(false);
     const [corrections, setCorrections] = useState([]);
+
+    const [menuProps, setMenuProps] = useState({ x: 0, y: 0, corrected: '', visible: false });
 
     const editorRef = useRef<any>();
 
@@ -116,6 +119,58 @@ function ContentEditor() {
         }
     }
 
+
+
+    const showMenuPrototype = (event: any, word: string, corrected: string) => {
+
+        setMenuProps({
+            x: event.clientX,
+            y: event.clientY,
+            corrected,
+            visible: true,
+        });
+
+        // const closeMenu = () => {
+        //     setMenuProps((prevProps) => ({ ...prevProps, visible: false }));
+        //     document.removeEventListener('click', closeMenu);
+        // };
+
+        // setTimeout(function () {
+        //     document.addEventListener('click', closeMenu);
+        // }, 0);
+
+        // This was working
+        // const menu = document.createElement('div');
+        // menu.style.position = 'absolute';
+        // menu.style.top = `${event.clientY}px`;
+        // menu.style.left = `${event.clientX}px`;
+        // menu.style.backgroundColor = 'white';
+        // menu.style.border = '1px solid black';
+        // menu.style.padding = '5px';
+        // menu.style.borderRadius = '5px';
+        // menu.style.zIndex = '1000';
+        // menu.innerHTML = `Did <b>you</b> mean ${corrected}?`;
+
+
+        // document.body.appendChild(menu);
+
+
+        // const closeMenu = () => {
+        //     document.body.removeChild(menu);
+        //     document.removeEventListener('click', closeMenu);
+        // };
+
+        // setTimeout(function () {
+        //     document.addEventListener('click', closeMenu);
+        // }, 0);
+
+    }
+
+    if (window) {
+
+        window.showMenuPrototype = showMenuPrototype;
+    }
+
     return (
         <div>
             <div
@@ -143,6 +198,12 @@ function ContentEditor() {
                     </button>
                 )}
             </div>
+            <div>
+                <span onClick={(e) => window.showMenuPrototype(e, 'word', 'corrected word')} >
+                    Menu Testing
+                </span>
+            </div>
+            {menuProps.visible && <ContextMenu x={menuProps.x} y={menuProps.y} corrected={menuProps.corrected} />}
         </div>
     );
 }
