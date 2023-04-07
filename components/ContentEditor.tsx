@@ -166,7 +166,7 @@ function ContentEditor() {
 
     }
 
-    if (window) {
+    if (typeof window !== 'undefined') {
 
         window.showMenuPrototype = showMenuPrototype;
     }
