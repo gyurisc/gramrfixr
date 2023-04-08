@@ -1,7 +1,35 @@
+"use client"
+
 import React, { useState, useEffect, useRef } from 'react';
 import LoadingDots from './LoadingDots';
 import sanitizeHtml from 'sanitize-html'
-import ContextMenu from './ContextMenu';
+  
+import {
+    Cloud,
+    CreditCard,
+    Github,
+    Keyboard,
+    LifeBuoy,
+    LogOut,
+    Mail,
+    MessageSquare,
+    Plus,
+    PlusCircle,
+    Settings,
+    User,
+    UserPlus,
+    Users,
+} from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+  } from "@/components/ui/context-menu"
+
+
 interface HighlightedWordProps {
     key: number;
     children: string;
@@ -200,12 +228,21 @@ function ContentEditor() {
                     </button>
                 )}
             </div>
-            <div>
+            {/* <div>
                 <span onClick={(e) => window.showMenuPrototype(e, 'word', 'corrected word')} >
                     Menu Testing
                 </span>
-            </div>
-            {menuProps.visible && <ContextMenu x={menuProps.x} y={menuProps.y} corrected={menuProps.corrected} />}
+            </div> */}
+            {/* {menuProps.visible && <ContextMenu x={menuProps.x} y={menuProps.y} corrected={menuProps.corrected} />} */}
+            <ContextMenu>
+            <ContextMenuTrigger>Right click</ContextMenuTrigger>
+            <ContextMenuContent>
+                <ContextMenuItem>Correct your spelling - title</ContextMenuItem>
+                <ContextMenuItem>My - correction comes here</ContextMenuItem>
+                <ContextMenuItem>Dismiss correction</ContextMenuItem>
+            </ContextMenuContent>
+            </ContextMenu>
+
         </div>
     );
 }
