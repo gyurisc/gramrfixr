@@ -5,20 +5,8 @@ import LoadingDots from './LoadingDots';
 import sanitizeHtml from 'sanitize-html'
   
 import {
-    Cloud,
-    CreditCard,
-    Github,
-    Keyboard,
-    LifeBuoy,
-    LogOut,
-    Mail,
-    MessageSquare,
-    Plus,
-    PlusCircle,
-    Settings,
-    User,
-    UserPlus,
-    Users,
+    Trash2,
+    Calendar
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -237,9 +225,22 @@ function ContentEditor() {
             <ContextMenu>
             <ContextMenuTrigger>Right click</ContextMenuTrigger>
             <ContextMenuContent>
-                <ContextMenuItem>Correct your spelling - title</ContextMenuItem>
-                <ContextMenuItem>My - correction comes here</ContextMenuItem>
-                <ContextMenuItem>Dismiss correction</ContextMenuItem>
+                <ContextMenuItem>
+                    <div>
+                    <h3 className='px-2 mt-1 text-sm text-gray-700'>
+                        Correct your spelling 
+                    </h3>
+                    <p className='px-2 py-3 text-green-600 text-bold text-xl'>
+                        title
+                    </p>
+                    </div>
+                    </ContextMenuItem>
+                <ContextMenuItem className='px-4'>
+                    <Trash2 className='mr-2 h-4 w-4' />
+                    <span className='text-base'>
+                    Dismiss correction
+                    </span>
+                </ContextMenuItem>
             </ContextMenuContent>
             </ContextMenu>
 
