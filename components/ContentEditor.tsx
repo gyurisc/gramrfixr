@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import LoadingDots from './LoadingDots';
 import sanitizeHtml from 'sanitize-html'
-  
+
 import {
     Trash2,
     Calendar
@@ -15,7 +15,7 @@ import {
     ContextMenuContent,
     ContextMenuItem,
     ContextMenuTrigger,
-  } from "@/components/ui/context-menu"
+} from "@/components/ui/context-menu"
 
 
 interface HighlightedWordProps {
@@ -28,12 +28,45 @@ interface Correction {
     corrected: string;
 }
 
-const HighlightedWord: React.FC<HighlightedWordProps> = ({ children }) => (
-    <span className="relative">
-        {children}
-        <span className="absolute left-0 bottom-[2px] w-full h-[2px] bg-red-500"></span>
-    </span>
-);
+const HighlightedWord = ({ original, corrected }: Correction) => {
+    const [menuProps, setMenuProps] = useState({ x: 0, y: 0, corrected: '', visible: false });
+    const [menuVisible, setMenuVisible] = useState(false);
+
+    return (
+        <div className='relative'>
+            <span className="border-b-2 border-red-700 text-decoration-none cursor-pointer"
+                onClick={(e) => {
+                    e.preventDefault();
+                    setMenuVisible(!menuVisible);
+                }}
+            >
+                {original}
+            </span>
+            {menuVisible && (
+                <div className='absolute left-0 mt-2'>
+                    <div className="bg-white border rounded shadow-md">
+                        <div className="p-2 hover:bg-gray-100 cursor-pointer">
+                            <h3 className='px-2 mt-1 text-sm text-gray-700'>
+                                Correct your spelling
+                            </h3>
+                            <p className='px-2 py-3 text-green-600 text-bold text-xl'>
+                                {corrected}
+                            </p>
+                        </div>
+                        <div className="p-2 hover:bg-gray-100 cursor-pointer">
+                            <span>
+                                <Trash2 className='mr-2 h-4 w-4' />
+                                <span className='text-base'>
+                                    Dismiss correction
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 function ContentEditor() {
     const [content, setContent] = useState('');
@@ -94,41 +127,15 @@ function ContentEditor() {
             for (let i = 0; i < corrections.length; i++) {
                 const { original, corrected } = corrections[i];
 
-                console.log('original: ', original);
-                console.log('corrected: ', corrected);
-
                 // replace the original word with the correction
-                modifiedText = modifiedText.replace(original, `
-                    <u style="border-bottom: 2px solid red; text-decoration: none; cursor: pointer;"
-                        onclick="showMenu(event, '${corrected}')"
-                    >
+                const replaceWith = `<span 
+                    data-corrected="${corrected}" 
+                    data-original="${original}" 
+                    data-word-index="${i}" 
+                    class="border-b-2 border-red-500 text-decoration-none cursor-pointer">
                     ${original}
-                </u>`);
-            }
-
-            window.showMenu = function (event: any, corrected: string) {
-                const menu = document.createElement('div');
-                menu.style.position = 'absolute';
-                menu.style.top = `${event.clientY}px`;
-                menu.style.left = `${event.clientX}px`;
-                menu.style.backgroundColor = 'white';
-                menu.style.border = '1px solid black';
-                menu.style.padding = '5px';
-                menu.style.borderRadius = '5px';
-                menu.style.zIndex = '1000';
-                menu.textContent = `Did you mean ${corrected}?`;
-
-                document.body.appendChild(menu);
-
-                const closeMenu = () => {
-                    document.body.removeChild(menu);
-                    document.removeEventListener('click', closeMenu);
-                };
-
-                setTimeout(function () {
-                    document.addEventListener('click', closeMenu);
-                }, 0);
-
+                    </span>`;
+                modifiedText = modifiedText.replace(original, replaceWith);
             }
 
             editorRef.current.innerHTML = modifiedText;
@@ -216,34 +223,7 @@ function ContentEditor() {
                     </button>
                 )}
             </div>
-            {/* <div>
-                <span onClick={(e) => window.showMenuPrototype(e, 'word', 'corrected word')} >
-                    Menu Testing
-                </span>
-            </div> */}
-            {/* {menuProps.visible && <ContextMenu x={menuProps.x} y={menuProps.y} corrected={menuProps.corrected} />} */}
-            <ContextMenu>
-            <ContextMenuTrigger>Right click</ContextMenuTrigger>
-            <ContextMenuContent>
-                <ContextMenuItem>
-                    <div>
-                    <h3 className='px-2 mt-1 text-sm text-gray-700'>
-                        Correct your spelling 
-                    </h3>
-                    <p className='px-2 py-3 text-green-600 text-bold text-xl'>
-                        title
-                    </p>
-                    </div>
-                    </ContextMenuItem>
-                <ContextMenuItem className='px-4'>
-                    <Trash2 className='mr-2 h-4 w-4' />
-                    <span className='text-base'>
-                    Dismiss correction
-                    </span>
-                </ContextMenuItem>
-            </ContextMenuContent>
-            </ContextMenu>
-
+            <HighlightedWord original="title" corrected="title" />
         </div>
     );
 }
