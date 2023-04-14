@@ -150,60 +150,6 @@ function ContentEditor() {
         }
     }
 
-
-
-    const showMenuPrototype = (event: any, word: string, corrected: string) => {
-
-        setMenuProps({
-            x: event.clientX,
-            y: event.clientY,
-            corrected,
-            visible: true,
-        });
-
-        // const closeMenu = () => {
-        //     setMenuProps((prevProps) => ({ ...prevProps, visible: false }));
-        //     document.removeEventListener('click', closeMenu);
-        // };
-
-        // setTimeout(function () {
-        //     document.addEventListener('click', closeMenu);
-        // }, 0);
-
-        // This was working
-        // const menu = document.createElement('div');
-        // menu.style.position = 'absolute';
-        // menu.style.top = `${event.clientY}px`;
-        // menu.style.left = `${event.clientX}px`;
-        // menu.style.backgroundColor = 'white';
-        // menu.style.border = '1px solid black';
-        // menu.style.padding = '5px';
-        // menu.style.borderRadius = '5px';
-        // menu.style.zIndex = '1000';
-        // menu.innerHTML = `Did <b>you</b> mean ${corrected}?`;
-
-
-        // document.body.appendChild(menu);
-
-
-        // const closeMenu = () => {
-        //     document.body.removeChild(menu);
-        //     document.removeEventListener('click', closeMenu);
-        // };
-
-        // setTimeout(function () {
-        //     document.addEventListener('click', closeMenu);
-        // }, 0);
-
-    }
-
-    // maybe to use useEffect here, so it only runs once 
-    // or use dynamic import
-    if (typeof window !== 'undefined') {
-
-        window.showMenuPrototype = showMenuPrototype;
-    }
-
     return (
         <div>
             <div
