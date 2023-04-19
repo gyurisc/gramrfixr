@@ -1,185 +1,81 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import LoadingDots from './LoadingDots';
-import sanitizeHtml from 'sanitize-html'
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { useState } from "react";
+import LoadingDots from "./LoadingDots";
 
-import {
-    Trash2,
-    Calendar
-} from "lucide-react"
+const defaultContent = `<p>Biology is a really unique scient to study. There are alott of different aspects to it, such as ecology, genetics, and physiology. One of the most interesitng things to learn about in biology is animals and the way they behave. For example, did you know that some birds give hugs to their babies to keep them warm? That's so cute!</p>
 
-import { Button } from "@/components/ui/button"
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuTrigger,
-} from "@/components/ui/context-menu"
+<p>Another important aspect of biology is understanding the structure and function of different living things. Cells are the basic building blocks of all living organisms, and they are responsible for carrying out all of the processes necessary for life. Studying the biology of cells is important for understanding everything from how the body works to how diseases develop.</p>`;
 
+const ContentEditor = () => {
+  const [isLoading, setIsLoading] = useState(false);
 
-interface HighlightedWordProps {
-    key: number;
-    children: string;
-}
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: defaultContent,
+    editorProps: {
+      attributes: {
+        class:
+          "border border-gray-300 min-h-[200px] p-3 prose dark:prose-invert focus:outline-none max-w-full",
+      },
+    },
+  });
 
-interface Correction {
-    original: string;
-    corrected: string;
-}
+  const checkGrammar = async () => {
+    const cleanText = editor?.getText();
 
-const HighlightedWord = ({ original, corrected }: Correction) => {
-    const [menuProps, setMenuProps] = useState({ x: 0, y: 0, corrected: '', visible: false });
-    const [menuVisible, setMenuVisible] = useState(false);
-
-    const dismissCorrection = (original: string, corrected: string) => {
-        alert(`dismiss correction: ${original}`);
+    if (!cleanText) {
+      console.log("content is missing: ", cleanText);
+      alert("Content is missing!");
+      return;
     }
 
-    const makeCorrection = (original: string, corrected: string) => {
-        alert(`make correction: ${original}`);
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/grammar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: cleanText }),
+      });
+
+      if (!response.ok) {
+        const errorResponse = await response.json();
+        alert(errorResponse?.error);
+      } else {
+        const data = await response.json();
+
+        if (data.result.corrections.length >= 0) {
+          console.log("data :: ", data.result.corrections.length);
+        }
+      }
+    } catch (err: any) {
+      alert("Failed to process your request");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    return (
-        <div className='relative'>
-            <span className="border-b-2 border-red-700 text-decoration-none cursor-pointer"
-                onClick={(e) => {
-                    e.preventDefault();
-                    setMenuVisible(!menuVisible);
-                }}
-            >
-                {original}
-            </span>
-            {menuVisible && (
-                <div className='absolute left-0 mt-2'>
-                    <div className="bg-white border rounded shadow-md" onClick={() => { makeCorrection(original, corrected) }}>
-                        <div className="p-2 hover:bg-gray-100 cursor-pointer">
-                            <h3 className='px-2 mt-1 text-sm text-gray-700'>
-                                Correct your spelling
-                            </h3>
-                            <p className='px-2 py-3 text-green-600 text-bold text-xl'>
-                                {corrected}
-                            </p>
-                        </div>
-                        <div className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => { dismissCorrection(original, corrected); }}>
-                            <span>
-                                <Trash2 className='mr-2 h-4 w-4' />
-                                <span className='text-base'>
-                                    Dismiss correction
-                                </span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
-function ContentEditor() {
-    const [content, setContent] = useState('');
-    const [busy, setBusy] = useState(false);
-    const [corrections, setCorrections] = useState([]);
-
-    const [menuProps, setMenuProps] = useState({ x: 0, y: 0, corrected: '', visible: false });
-
-    const editorRef = useRef<any>();
-
-    const handleChange = () => {
-        if (editorRef.current != null) {
-            setContent(editorRef.current.innerHTML);
-        }
-    };
-
-    const checkGrammar = async (event: React.MouseEvent<HTMLButtonElement>) => {
-        event.preventDefault();
-
-        const cleanText = sanitizeHtml(content, { allowedTags: [], allowedAttributes: {} });
-
-        if (!cleanText) {
-            console.log('content is missing: ', cleanText);
-            return;
-        }
-
-        setBusy(true);
-
-        const response = await fetch('/api/grammar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ content: cleanText }),
-        });
-
-        if (!response.ok) {
-            console.log('error ', response.statusText);
-        } else {
-
-            const data = await response.json();
-
-            if (data.result.corrections.length >= 0) {
-                highlightCorrections(data.result.corrections);
-            }
-
-        }
-
-        setBusy(false);
-    };
-
-    function highlightCorrections(corrections: Correction[]) {
-        if (editorRef.current != null) {
-            editorRef.current.innerHTML = content;
-
-            console.log('highlightCorrections: ', corrections);
-            let modifiedText = editorRef.current.innerHTML;
-            for (let i = 0; i < corrections.length; i++) {
-                const { original, corrected } = corrections[i];
-
-                // replace the original word with the correction
-                const replaceWith = `<span 
-                    data-corrected="${corrected}" 
-                    data-original="${original}" 
-                    data-word-index="${i}" 
-                    class="border-b-2 border-red-500 text-decoration-none cursor-pointer">
-                    ${original}
-                    </span>`;
-                modifiedText = modifiedText.replace(original, replaceWith);
-            }
-
-            editorRef.current.innerHTML = modifiedText;
-        }
-    }
-
-    return (
-        <div>
-            <div
-                className="border border-gray-300 p-4 min-h-[200px] w-full outline-none focus:ring focus:border-blue-300"
-                ref={editorRef}
-                contentEditable="true"
-                suppressContentEditableWarning
-                onInput={handleChange}
-            />
-            <div className='sm:px-4 px-2'>
-                {!busy && (
-                    <button
-                        className="bg-black text-white px-6 py-3 rounded-md mt-5 hover:bg-gray-900 transition-colors"
-                        onClick={(e) => checkGrammar(e)}
-                    >
-                        Check My Grammar
-                    </button>
-                )}
-                {busy && (
-                    <button
-                        className="bg-black text-white px-6 py-3 rounded-md mt-5 hover:bg-gray-900 transition-colors"
-                        disabled
-                    >
-                        <LoadingDots color="white" style="large" />
-                    </button>
-                )}
-            </div>
-            <HighlightedWord original="title" corrected="title" />
-        </div>
-    );
-}
+  return (
+    <div className="my-8">
+      <EditorContent editor={editor} />
+      <button
+        type="button"
+        className="mt-8 rounded-md bg-black px-6 py-3 text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:bg-gray-400"
+        onClick={checkGrammar}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <LoadingDots color="white" style="large" />
+        ) : (
+          "Check My Grammar"
+        )}
+      </button>
+    </div>
+  );
+};
 
 export default ContentEditor;
