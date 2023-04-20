@@ -56,6 +56,15 @@ export enum GrammarCheckerOperations {
 
 const dispatch = (tr: Transaction) => editorView.dispatch(tr);
 
+const selectElementText = (el: EventTarget) => {
+  const range = document.createRange();
+  range.selectNode(el as HTMLSpanElement);
+
+  const sel = window.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(range);
+};
+
 const updateMatchAndRange = (m?: Match, range?: Range) => {
   if (m) match = m;
   else match = undefined;
@@ -73,6 +82,8 @@ const updateMatchAndRange = (m?: Match, range?: Range) => {
 const mouseEventsListener = (e: Event) => {
   if (!e.target) return;
 
+  selectElementText(e.target);
+
   const matchString = (e.target as HTMLSpanElement)
     .getAttribute("match")
     ?.trim();
@@ -88,6 +99,8 @@ const mouseEventsListener = (e: Event) => {
   else updateMatchAndRange();
 };
 
+const mouseLeaveEventListener = () => updateMatchAndRange();
+
 const debouncedMouseEventsListener = debounce(mouseEventsListener, 50);
 
 const addEventListenersToDecorations = () => {
@@ -96,8 +109,8 @@ const addEventListenersToDecorations = () => {
   if (!decorations.length) return;
 
   decorations.forEach((el) => {
-    el.addEventListener("mouseover", debouncedMouseEventsListener);
-    el.addEventListener("mouseenter", debouncedMouseEventsListener);
+    el.addEventListener("click", debouncedMouseEventsListener);
+    el.addEventListener("mouseleave", mouseLeaveEventListener);
   });
 };
 
@@ -142,41 +155,30 @@ const gimmeDecoration = (from: number, to: number, match: Match) =>
 
 const proofreadAndDecorateWholeDoc = async (
   doc: PMNode,
-  nodePos = 0,
+  _nodePos = 0,
   corrections: Correction[]
 ) => {
   textNodesWithPosition = [];
 
   let index = 0;
   doc?.descendants((node, pos) => {
-    if (!node.isText) {
-      index += 1;
-      return;
-    }
+    if (node.isText) {
+      if (textNodesWithPosition[index]) {
+        const text = textNodesWithPosition[index].text + node.text;
+        const from = textNodesWithPosition[index].from;
+        const to = from + text.length;
 
-    const intermediateTextNodeWIthPos = {
-      text: "",
-      from: -1,
-      to: -1,
-    };
+        textNodesWithPosition[index] = { text, from, to };
+      } else {
+        const text = node.text as string;
+        const from = pos;
+        const to = pos + text.length;
 
-    if (textNodesWithPosition[index]) {
-      intermediateTextNodeWIthPos.text =
-        textNodesWithPosition[index].text + node.text;
-      intermediateTextNodeWIthPos.from =
-        textNodesWithPosition[index].from + nodePos;
-      intermediateTextNodeWIthPos.to =
-        intermediateTextNodeWIthPos.from +
-        intermediateTextNodeWIthPos.text.length +
-        nodePos;
+        textNodesWithPosition[index] = { text, from, to };
+      }
     } else {
-      intermediateTextNodeWIthPos.text = node?.text || "";
-      intermediateTextNodeWIthPos.from = pos + nodePos;
-      intermediateTextNodeWIthPos.to =
-        pos + nodePos + (node?.text || "").length;
+      index += 1;
     }
-
-    textNodesWithPosition[index] = intermediateTextNodeWIthPos;
   });
 
   textNodesWithPosition = textNodesWithPosition.filter(Boolean);
@@ -271,6 +273,8 @@ export const GrammarChecker = Extension.create<
 
           const content = doc.textBetween(from, to);
 
+          editor?.commands.insertContentAt({ from, to }, content);
+
           (db as any).ignoredWords.add({
             value: content,
             documentId: `${extensionDocId}`,
@@ -352,11 +356,11 @@ export const GrammarChecker = Extension.create<
 
             if (matchRangeUpdated) this.storage.matchRange = matchRange;
 
-            const languageToolDecorations = tr.getMeta(
+            const grammarCheckerDecorations = tr.getMeta(
               GrammarCheckerOperations.MainTransactionName
             );
 
-            if (languageToolDecorations) return decorationSet;
+            if (grammarCheckerDecorations) return decorationSet;
 
             decorationSet = decorationSet.map(tr.mapping, tr.doc);
 

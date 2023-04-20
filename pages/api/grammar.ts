@@ -96,7 +96,8 @@ export default async function handler(
     console.log("corrections by openai :: ", response?.corrections);
 
     const finalResponse: Correction[] = [];
-    response?.corrections?.forEach((correction: Correction) => {
+
+    for (const correction of response?.corrections) {
       // find all matching words with offset position
       const offsets = getIndicesOf(correction.original, content, true);
       // const offsets = [
@@ -117,7 +118,7 @@ export default async function handler(
 
         finalResponse.push(...corrections);
       }
-    });
+    }
 
     return res.status(200).json({
       result: {
