@@ -6,31 +6,25 @@ import { Plugin, PluginKey, Transaction } from "prosemirror-state";
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 
 import {
-  GramrFixrOptions,
-  GramrFixrStorage,
-  GramrFixrResponse,
+  GrammarCheckerOptions,
+  GrammarCheckerStorage,
   Match,
   TextNodesWithPosition,
   Range,
 } from "./GrammarChecker.types";
+import { Correction } from "@/pages/api/grammar";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
-    languagetool: {
+    grammarChecker: {
       /**
        * Proofreads whole document
        */
-      proofread: () => ReturnType;
+      proofread: (corrections: Correction[]) => ReturnType;
 
-      toggleProofreading: () => ReturnType;
+      ignoreGrammarCheckerSuggestion: () => ReturnType;
 
-      ignoreLanguageToolSuggestion: () => ReturnType;
-
-      resetLanguageToolMatch: () => ReturnType;
-
-      toggleLanguageTool: () => ReturnType;
-
-      getLanguageToolState: () => ReturnType;
+      resetGrammarCheckerMatch: () => ReturnType;
     };
   }
 }
@@ -38,15 +32,12 @@ declare module "@tiptap/core" {
 let editorView: EditorView;
 let decorationSet: DecorationSet;
 let extensionDocId: string | number;
-let apiUrl = "";
 let textNodesWithPosition: TextNodesWithPosition[] = [];
 let match: Match | undefined | null = undefined;
 let matchRange: Range | undefined | null;
-let proofReadInitially = false;
-let isLanguageToolActive = true;
-let lastOriginalFrom = 0;
+let isGrammarCheckerActive = true;
 
-const db = new Dexie("GramrFixrIgnoredSuggestions");
+const db = new Dexie("GrammarCheckerIgnoredSuggestions");
 
 db.version(1).stores({
   ignoredWords: `
@@ -60,7 +51,7 @@ export enum GrammarCheckerOperations {
   MainTransactionName = "grammarCheckerTransaction",
   MatchUpdatedTransactionName = "matchUpdated",
   MatchRangeUpdatedTransactionName = "matchRangeUpdated",
-  LoadingTransactionName = "languageToolLoading",
+  LoadingTransactionName = "grammarCheckerLoading",
 }
 
 const dispatch = (tr: Transaction) => editorView.dispatch(tr);
@@ -149,81 +140,11 @@ const gimmeDecoration = (from: number, to: number, match: Match) =>
     match: JSON.stringify({ match, from, to }),
   });
 
-const moreThan500Words = (s: string) => s.trim().split(/\s+/).length >= 500;
-
-const getMatchAndSetDecorations = async (
+const proofreadAndDecorateWholeDoc = async (
   doc: PMNode,
-  text: string,
-  originalFrom: number
+  nodePos = 0,
+  corrections: Correction[]
 ) => {
-  const postOptions = {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-    },
-    body: `text=${encodeURIComponent(text)}&language=en-US&enabledOnly=false`,
-  };
-
-  const ltRes: GramrFixrResponse = await (
-    await fetch(apiUrl, postOptions)
-  ).json();
-
-  const { matches } = ltRes;
-
-  const decorations: Decoration[] = [];
-
-  for (const match of matches) {
-    const docFrom = match.offset + originalFrom;
-    const docTo = docFrom + match.length;
-
-    if (extensionDocId) {
-      const content = text.substring(
-        match.offset - 1,
-        match.offset + match.length - 1
-      );
-      const result = await (db as any).ignoredWords.get({ value: content });
-
-      if (!result) decorations.push(gimmeDecoration(docFrom, docTo, match));
-    } else {
-      decorations.push(gimmeDecoration(docFrom, docTo, match));
-    }
-  }
-
-  const decorationsToRemove = decorationSet.find(
-    originalFrom,
-    originalFrom + text.length
-  );
-
-  decorationSet = decorationSet.remove(decorationsToRemove);
-
-  decorationSet = decorationSet.add(doc, decorations);
-
-  if (editorView)
-    dispatch(
-      editorView.state.tr.setMeta(
-        GrammarCheckerOperations.MainTransactionName,
-        true
-      )
-    );
-
-  setTimeout(addEventListenersToDecorations, 100);
-};
-
-const debouncedGetMatchAndSetDecorations = debounce(
-  getMatchAndSetDecorations,
-  300
-);
-
-const onNodeChanged = (doc: PMNode, text: string, originalFrom: number) => {
-  if (originalFrom !== lastOriginalFrom)
-    getMatchAndSetDecorations(doc, text, originalFrom);
-  else debouncedGetMatchAndSetDecorations(doc, text, originalFrom);
-
-  lastOriginalFrom = originalFrom;
-};
-
-const proofreadAndDecorateWholeDoc = async (doc: PMNode, nodePos = 0) => {
   textNodesWithPosition = [];
 
   let index = 0;
@@ -260,83 +181,57 @@ const proofreadAndDecorateWholeDoc = async (doc: PMNode, nodePos = 0) => {
 
   textNodesWithPosition = textNodesWithPosition.filter(Boolean);
 
-  let finalText = "";
+  // getMatchAndSetDecorations
+  const decorations: Decoration[] = [];
 
-  const chunksOf500Words: { from: number; text: string }[] = [];
+  for (const match of corrections) {
+    const docFrom = match.offset;
+    const docTo = docFrom + match.length;
 
-  let upperFrom = 0 + nodePos;
-  let newDataSet = true;
+    const finalMatch: Match = {
+      replacements: [{ value: match.corrected }],
+      offset: match.offset,
+      length: match.length,
+      message: "Possible mistake found.",
+    };
 
-  let lastPos = 1 + nodePos;
-
-  for (const { text, from, to } of textNodesWithPosition) {
-    if (!newDataSet) {
-      upperFrom = from;
-
-      newDataSet = true;
-    } else {
-      const diff = from - lastPos;
-      if (diff > 0) finalText += Array(diff + 1).join(" ");
-    }
-
-    lastPos = to;
-
-    finalText += text;
-
-    if (moreThan500Words(finalText)) {
-      const updatedFrom = chunksOf500Words.length ? upperFrom : upperFrom + 1;
-
-      chunksOf500Words.push({
-        from: updatedFrom,
-        text: finalText,
+    if (extensionDocId) {
+      const result = await (db as any).ignoredWords.get({
+        value: match.original,
       });
 
-      finalText = "";
-      newDataSet = false;
+      if (!result)
+        decorations.push(gimmeDecoration(docFrom, docTo, finalMatch));
+    } else {
+      decorations.push(gimmeDecoration(docFrom, docTo, finalMatch));
     }
   }
 
-  chunksOf500Words.push({
-    from: chunksOf500Words.length ? upperFrom : 1,
-    text: finalText,
-  });
+  const decorationsToRemove = decorationSet.find(0, doc.textContent.length);
 
-  const requests = chunksOf500Words.map(({ text, from }) =>
-    getMatchAndSetDecorations(doc, text, from)
-  );
+  decorationSet = decorationSet.remove(decorationsToRemove);
+
+  decorationSet = decorationSet.add(doc, decorations);
 
   if (editorView)
     dispatch(
       editorView.state.tr.setMeta(
-        GrammarCheckerOperations.LoadingTransactionName,
+        GrammarCheckerOperations.MainTransactionName,
         true
       )
     );
-  Promise.all(requests).then(() => {
-    if (editorView)
-      dispatch(
-        editorView.state.tr.setMeta(
-          GrammarCheckerOperations.LoadingTransactionName,
-          false
-        )
-      );
-  });
 
-  proofReadInitially = true;
+  setTimeout(addEventListenersToDecorations, 100);
 };
 
-const debouncedProofreadAndDecorate = debounce(
-  proofreadAndDecorateWholeDoc,
-  500
-);
-
-export const GramrFixr = Extension.create<GramrFixrOptions, GramrFixrStorage>({
-  name: "gramrfixr",
+export const GrammarChecker = Extension.create<
+  GrammarCheckerOptions,
+  GrammarCheckerStorage
+>({
+  name: "grammarChecker",
 
   addOptions() {
     return {
-      apiUrl: "/api/grammar",
-      automaticMode: true,
       documentId: undefined,
     };
   },
@@ -349,22 +244,20 @@ export const GramrFixr = Extension.create<GramrFixrOptions, GramrFixrStorage>({
         from: -1,
         to: -1,
       },
-      active: isLanguageToolActive,
+      active: isGrammarCheckerActive,
     };
   },
 
   addCommands() {
     return {
       proofread:
-        () =>
+        (corrections) =>
         ({ tr }) => {
-          apiUrl = this.options.apiUrl;
-
-          proofreadAndDecorateWholeDoc(tr.doc);
+          proofreadAndDecorateWholeDoc(tr.doc, 0, corrections);
           return true;
         },
 
-      ignoreLanguageToolSuggestion:
+      ignoreGrammarCheckerSuggestion:
         () =>
         ({ editor }) => {
           if (this.options.documentId === undefined)
@@ -385,7 +278,7 @@ export const GramrFixr = Extension.create<GramrFixrOptions, GramrFixrStorage>({
 
           return false;
         },
-      resetLanguageToolMatch:
+      resetGrammarCheckerMatch:
         () =>
         ({
           editor: {
@@ -412,62 +305,34 @@ export const GramrFixr = Extension.create<GramrFixrOptions, GramrFixrStorage>({
 
           return false;
         },
-
-      toggleLanguageTool:
-        () =>
-        ({ commands }) => {
-          isLanguageToolActive = !isLanguageToolActive;
-
-          if (isLanguageToolActive) commands.proofread();
-          else commands.resetLanguageToolMatch();
-
-          this.storage.active = isLanguageToolActive;
-
-          return false;
-        },
-
-      getLanguageToolState: () => () => isLanguageToolActive,
     };
   },
 
   addProseMirrorPlugins() {
-    const { apiUrl: optionsApiUrl, documentId } = this.options;
-
-    apiUrl = optionsApiUrl;
+    const { documentId } = this.options;
 
     return [
       new Plugin({
-        key: new PluginKey("gramrfixrPlugin"),
+        key: new PluginKey("grammarCheckerPlugin"),
         props: {
           decorations(state) {
             return this.getState(state);
           },
           attributes: {
             spellcheck: "false",
-            isLanguageToolActive: `${isLanguageToolActive}`,
-          },
-
-          handlePaste(view) {
-            const { docChanged } = view.state.tr;
-
-            if (docChanged) debouncedProofreadAndDecorate(view.state.tr.doc);
-
-            return false;
+            isGrammarCheckerActive: `${isGrammarCheckerActive}`,
           },
         },
         state: {
           init: (_, state) => {
             decorationSet = DecorationSet.create(state.doc, []);
 
-            if (this.options.automaticMode)
-              proofreadAndDecorateWholeDoc(state.doc);
-
             if (documentId) extensionDocId = documentId;
 
             return decorationSet;
           },
           apply: (tr) => {
-            if (!isLanguageToolActive) return DecorationSet.empty;
+            if (!isGrammarCheckerActive) return DecorationSet.empty;
 
             const matchUpdated = tr.getMeta(
               GrammarCheckerOperations.MatchUpdatedTransactionName
@@ -492,36 +357,6 @@ export const GramrFixr = Extension.create<GramrFixrOptions, GramrFixrStorage>({
             );
 
             if (languageToolDecorations) return decorationSet;
-
-            if (tr.docChanged && this.options.automaticMode) {
-              if (!proofReadInitially) debouncedProofreadAndDecorate(tr.doc);
-              else {
-                const {
-                  selection: { from, to },
-                } = tr;
-
-                let changedNodeWithPos: { node: PMNode; pos: number };
-
-                const currentBlockNode = tr.doc.descendants((node, pos) => {
-                  if (!node.isBlock) return false;
-
-                  const [nodeFrom, nodeTo] = [pos, pos + node.nodeSize];
-
-                  if (!(nodeFrom <= from && to <= nodeTo)) return;
-
-                  changedNodeWithPos = { node, pos };
-                });
-
-                // @ts-ignore
-                if (changedNodeWithPos) {
-                  onNodeChanged(
-                    changedNodeWithPos.node,
-                    changedNodeWithPos.node.textContent,
-                    changedNodeWithPos.pos + 1
-                  );
-                }
-              }
-            }
 
             decorationSet = decorationSet.map(tr.mapping, tr.doc);
 

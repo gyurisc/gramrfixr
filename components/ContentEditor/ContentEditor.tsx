@@ -7,12 +7,16 @@ import StarterKit from "@tiptap/starter-kit";
 
 import LoadingDots from "../LoadingDots";
 import {
-  GramrFixr,
+  GrammarChecker,
   GrammarCheckerOperations,
 } from "./extensions/GrammarChecker";
 import { Match, Range } from "./extensions/GrammarChecker.types";
 
 const defaultContent = `<p>Biology is a really unique scient to study. There are alott of different aspects to it, such as ecology, genetics, and physiology. One of the most interesitng things to learn about in biology is animals and the way they behave. For example, did you know that some birds give hugs to their babies to keep them warm? That's so cute!</p>
+
+<p>Another important aspect of biology is understanding the structure and function of different living things. Cells are the basic building blocks of all living organisms, and they are responsible for carrying out all of the processes necessary for life. Studying the biology of cells is important for understanding everything from how the body works to how diseases develop.</p>
+
+<p>Biology is a really unique scient to study. There are alott of different aspects to it, such as ecology, genetics, and physiology. One of the most interesitng things to learn about in biology is animals and the way they behave. For example, did you know that some birds give hugs to their babies to keep them warm? That's so cute!</p>
 
 <p>Another important aspect of biology is understanding the structure and function of different living things. Cells are the basic building blocks of all living organisms, and they are responsible for carrying out all of the processes necessary for life. Studying the biology of cells is important for understanding everything from how the body works to how diseases develop.</p>`;
 
@@ -22,10 +26,8 @@ const ContentEditor = () => {
   const editor = useEditor({
     extensions: [
       StarterKit,
-      GramrFixr.configure({
-        automaticMode: false,
-        documentId: "gramrfixr-v1",
-        apiUrl: "https://api.languagetool.org/v2/check", // replace this with your actual url
+      GrammarChecker.configure({
+        documentId: "grammar-checker-v1",
       }),
     ],
     content: defaultContent,
@@ -57,6 +59,12 @@ const ContentEditor = () => {
       return;
     }
 
+    // max word limit
+    if (cleanText.split(" ")?.length > 800) {
+      alert("You may only use 800 words at once!");
+      return;
+    }
+
     try {
       setIsLoading(true);
       const response = await fetch("/api/grammar", {
@@ -74,6 +82,7 @@ const ContentEditor = () => {
         const data = await response.json();
 
         if (data.result.corrections.length >= 0) {
+          editor?.commands.proofread(data.result.corrections);
           console.log("data :: ", data.result.corrections.length);
         }
       }
@@ -86,8 +95,8 @@ const ContentEditor = () => {
 
   // Grammar checking extension
   const shouldShow = (editor: Editor) => {
-    const match = editor.storage.gramrfixr.match;
-    const matchRange = editor.storage.gramrfixr.matchRange;
+    const match = editor.storage.grammarChecker.match;
+    const matchRange = editor.storage.grammarChecker.matchRange;
     const { from, to } = editor.state.selection;
     return (
       !!match && !!matchRange && matchRange.from <= from && to <= matchRange.to
@@ -97,8 +106,8 @@ const ContentEditor = () => {
   const matchRange = useRef<Range | null>(null);
   const loading = useRef(false);
   const updateMatch = (editor: Editor) => {
-    match.current = editor.storage.gramrfixr.match;
-    matchRange.current = editor.storage.gramrfixr.matchRange;
+    match.current = editor.storage.grammarChecker.match;
+    matchRange.current = editor.storage.grammarChecker.matchRange;
   };
 
   const replacements = match.current?.replacements || [];
@@ -109,7 +118,7 @@ const ContentEditor = () => {
     }
   };
   const ignoreSuggestion = () =>
-    editor?.commands.ignoreLanguageToolSuggestion();
+    editor?.commands.ignoreGrammarCheckerSuggestion();
 
   return (
     <div className="my-8">

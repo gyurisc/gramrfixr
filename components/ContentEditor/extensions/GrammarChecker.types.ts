@@ -9,19 +9,13 @@ export interface Match {
   length: number;
 }
 
-export interface GramrFixrResponse {
-  matches: Match[];
-}
-
 export interface TextNodesWithPosition {
   text: string;
   from: number;
   to: number;
 }
 
-export interface GramrFixrOptions {
-  apiUrl: string;
-  automaticMode: boolean;
+export interface GrammarCheckerOptions {
   documentId: string | number | undefined;
 }
 
@@ -30,7 +24,7 @@ export interface Range {
   to: number;
 }
 
-export interface GramrFixrStorage {
+export interface GrammarCheckerStorage {
   match?: Match | undefined | null;
   loading?: boolean;
   matchRange?: Range | undefined | null;

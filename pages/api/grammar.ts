@@ -11,11 +11,11 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration);
 
-type Correction = {
+export type Correction = {
   original: string;
   corrected: string;
   offset: number;
-  length?: number;
+  length: number;
 };
 
 type Data = {
@@ -24,6 +24,32 @@ type Data = {
   };
   error?: string;
 };
+
+function getIndicesOf(
+  searchStr: string,
+  content: string,
+  caseSensitive = false
+) {
+  let searchStrLen = searchStr.length;
+  if (searchStrLen == 0) {
+    return [];
+  }
+
+  let startIndex = 0,
+    index,
+    indices = [];
+  if (!caseSensitive) {
+    content = content.toLowerCase();
+    searchStr = searchStr.toLowerCase();
+  }
+
+  while ((index = content.indexOf(searchStr, startIndex)) > -1) {
+    indices.push(index);
+    startIndex = index + searchStrLen;
+  }
+
+  return indices;
+}
 
 function generatePrompt(message: string) {
   return `Pretend that you are an English Grammar teacher. 
@@ -67,23 +93,29 @@ export default async function handler(
     ).toString();
     const response = JSON.parse(response_content);
 
+    console.log("corrections by openai :: ", response?.corrections);
+
     const finalResponse: Correction[] = [];
     response?.corrections?.forEach((correction: Correction) => {
       // find all matching words with offset position
-      const offsets = [
-        ...content.matchAll(new RegExp(correction.original, "gi")),
-      ].map((a) => a.index);
+      const offsets = getIndicesOf(correction.original, content, true);
+      // const offsets = [
+      //   ...content.matchAll(new RegExp(correction.original, "gi")),
+      // ].map((a) => a.index);
+
       if (offsets.length) {
         // create a new correction object with offset position
-        offsets.forEach((offset) => {
+        const corrections = offsets.map((offset) => {
           const newCorrectionObject: Correction = {
             original: correction.original,
             corrected: correction.corrected,
-            offset,
+            offset: offset + 1,
             length: correction.original.length,
           };
-          finalResponse.push(newCorrectionObject);
+          return newCorrectionObject;
         });
+
+        finalResponse.push(...corrections);
       }
     });
 
