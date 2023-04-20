@@ -2,21 +2,14 @@ interface Replacement {
   value: string;
 }
 
-interface Rule {
-  id: string;
-  description: string;
-  issueType: string;
-}
-
 export interface Match {
   message: string;
   replacements: Replacement[];
   offset: number;
   length: number;
-  rule: Rule;
 }
 
-export interface LanguageToolResponse {
+export interface GramrFixrResponse {
   matches: Match[];
 }
 
@@ -26,8 +19,7 @@ export interface TextNodesWithPosition {
   to: number;
 }
 
-export interface LanguageToolOptions {
-  language: string;
+export interface GramrFixrOptions {
   apiUrl: string;
   automaticMode: boolean;
   documentId: string | number | undefined;
@@ -38,7 +30,7 @@ export interface Range {
   to: number;
 }
 
-export interface LanguageToolStorage {
+export interface GramrFixrStorage {
   match?: Match | undefined | null;
   loading?: boolean;
   matchRange?: Range | undefined | null;

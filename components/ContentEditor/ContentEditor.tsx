@@ -7,8 +7,8 @@ import StarterKit from "@tiptap/starter-kit";
 
 import LoadingDots from "../LoadingDots";
 import {
-  LanguageTool,
-  LanguageToolHelpingWords,
+  GramrFixr,
+  GrammarCheckerOperations,
 } from "./extensions/GrammarChecker";
 import { Match, Range } from "./extensions/GrammarChecker.types";
 
@@ -22,8 +22,8 @@ const ContentEditor = () => {
   const editor = useEditor({
     extensions: [
       StarterKit,
-      LanguageTool.configure({
-        automaticMode: true,
+      GramrFixr.configure({
+        automaticMode: false,
         documentId: "gramrfixr-v1",
         apiUrl: "https://api.languagetool.org/v2/check", // replace this with your actual url
       }),
@@ -42,7 +42,7 @@ const ContentEditor = () => {
       setTimeout(() => updateMatch(editor as any));
     },
     onTransaction({ transaction: tr }) {
-      if (tr.getMeta(LanguageToolHelpingWords.LoadingTransactionName))
+      if (tr.getMeta(GrammarCheckerOperations.LoadingTransactionName))
         loading.current = true;
       else loading.current = false;
     },
@@ -86,8 +86,8 @@ const ContentEditor = () => {
 
   // Grammar checking extension
   const shouldShow = (editor: Editor) => {
-    const match = editor.storage.languagetool.match;
-    const matchRange = editor.storage.languagetool.matchRange;
+    const match = editor.storage.gramrfixr.match;
+    const matchRange = editor.storage.gramrfixr.matchRange;
     const { from, to } = editor.state.selection;
     return (
       !!match && !!matchRange && matchRange.from <= from && to <= matchRange.to
@@ -97,8 +97,8 @@ const ContentEditor = () => {
   const matchRange = useRef<Range | null>(null);
   const loading = useRef(false);
   const updateMatch = (editor: Editor) => {
-    match.current = editor.storage.languagetool.match;
-    matchRange.current = editor.storage.languagetool.matchRange;
+    match.current = editor.storage.gramrfixr.match;
+    matchRange.current = editor.storage.gramrfixr.matchRange;
   };
 
   const replacements = match.current?.replacements || [];

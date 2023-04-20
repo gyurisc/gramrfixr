@@ -11,7 +11,7 @@
   background: rgba(232, 106, 105, 0.2);
 }
 
-.ProseMirror .lt-style {
+/* .ProseMirror .lt-style {
   border-bottom: 2px solid #9d8eff;
 }
 
@@ -27,7 +27,7 @@
 .ProseMirror .lt-typographical:hover,
 .ProseMirror .lt-grammar:hover {
   background: rgba(238, 181, 92, 0.2) !important;
-}
+} */
 
 .ProseMirror .lt-misspelling {
   border-bottom: 2px solid #e86a69;

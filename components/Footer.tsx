@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="flex w-full flex-col items-center justify-between space-y-3 border-t py-4 text-center sm:mb-4 sm:flex-row">
-      <div>
+    <footer className="flex w-full flex-col items-center justify-between border-t py-4 text-center sm:mb-4 sm:flex-row">
+      <p>
         Powered by{" "}
         <a
           href="https://openai.com/blog/chatgpt"
@@ -22,8 +22,8 @@ export default function Footer() {
         >
           Vercel Edge Functions.
         </a>
-      </div>
-      <div className="flex space-x-4 pb-4 sm:pb-0">
+      </p>
+      <div className="mt-4 flex items-center gap-2 sm:mt-0">
         <Link
           href="https://twitter.com/gyurisc"
           className="group"

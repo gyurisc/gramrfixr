@@ -6,9 +6,9 @@ import { Plugin, PluginKey, Transaction } from "prosemirror-state";
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 
 import {
-  LanguageToolOptions,
-  LanguageToolStorage,
-  LanguageToolResponse,
+  GramrFixrOptions,
+  GramrFixrStorage,
+  GramrFixrResponse,
   Match,
   TextNodesWithPosition,
   Range,
@@ -44,8 +44,9 @@ let match: Match | undefined | null = undefined;
 let matchRange: Range | undefined | null;
 let proofReadInitially = false;
 let isLanguageToolActive = true;
+let lastOriginalFrom = 0;
 
-const db = new Dexie("LanguageToolIgnoredSuggestions");
+const db = new Dexie("GramrFixrIgnoredSuggestions");
 
 db.version(1).stores({
   ignoredWords: `
@@ -55,8 +56,8 @@ db.version(1).stores({
   `,
 });
 
-export enum LanguageToolHelpingWords {
-  LanguageToolTransactionName = "languageToolTransaction",
+export enum GrammarCheckerOperations {
+  MainTransactionName = "grammarCheckerTransaction",
   MatchUpdatedTransactionName = "matchUpdated",
   MatchRangeUpdatedTransactionName = "matchRangeUpdated",
   LoadingTransactionName = "languageToolLoading",
@@ -72,8 +73,8 @@ const updateMatchAndRange = (m?: Match, range?: Range) => {
   else matchRange = undefined;
 
   const tr = editorView.state.tr;
-  tr.setMeta(LanguageToolHelpingWords.MatchUpdatedTransactionName, true);
-  tr.setMeta(LanguageToolHelpingWords.MatchRangeUpdatedTransactionName, true);
+  tr.setMeta(GrammarCheckerOperations.MatchUpdatedTransactionName, true);
+  tr.setMeta(GrammarCheckerOperations.MatchRangeUpdatedTransactionName, true);
 
   editorView.dispatch(tr);
 };
@@ -142,7 +143,8 @@ export function changedDescendants(
 
 const gimmeDecoration = (from: number, to: number, match: Match) =>
   Decoration.inline(from, to, {
-    class: `lt lt-${match.rule.issueType}`,
+    // class: `lt lt-${match.rule.issueType}`,
+    class: "lt lt-misspelling",
     nodeName: "span",
     match: JSON.stringify({ match, from, to }),
   });
@@ -163,7 +165,7 @@ const getMatchAndSetDecorations = async (
     body: `text=${encodeURIComponent(text)}&language=en-US&enabledOnly=false`,
   };
 
-  const ltRes: LanguageToolResponse = await (
+  const ltRes: GramrFixrResponse = await (
     await fetch(apiUrl, postOptions)
   ).json();
 
@@ -200,7 +202,7 @@ const getMatchAndSetDecorations = async (
   if (editorView)
     dispatch(
       editorView.state.tr.setMeta(
-        LanguageToolHelpingWords.LanguageToolTransactionName,
+        GrammarCheckerOperations.MainTransactionName,
         true
       )
     );
@@ -212,8 +214,6 @@ const debouncedGetMatchAndSetDecorations = debounce(
   getMatchAndSetDecorations,
   300
 );
-
-let lastOriginalFrom = 0;
 
 const onNodeChanged = (doc: PMNode, text: string, originalFrom: number) => {
   if (originalFrom !== lastOriginalFrom)
@@ -308,7 +308,7 @@ const proofreadAndDecorateWholeDoc = async (doc: PMNode, nodePos = 0) => {
   if (editorView)
     dispatch(
       editorView.state.tr.setMeta(
-        LanguageToolHelpingWords.LoadingTransactionName,
+        GrammarCheckerOperations.LoadingTransactionName,
         true
       )
     );
@@ -316,7 +316,7 @@ const proofreadAndDecorateWholeDoc = async (doc: PMNode, nodePos = 0) => {
     if (editorView)
       dispatch(
         editorView.state.tr.setMeta(
-          LanguageToolHelpingWords.LoadingTransactionName,
+          GrammarCheckerOperations.LoadingTransactionName,
           false
         )
       );
@@ -330,16 +330,12 @@ const debouncedProofreadAndDecorate = debounce(
   500
 );
 
-export const LanguageTool = Extension.create<
-  LanguageToolOptions,
-  LanguageToolStorage
->({
-  name: "languagetool",
+export const GramrFixr = Extension.create<GramrFixrOptions, GramrFixrStorage>({
+  name: "gramrfixr",
 
   addOptions() {
     return {
-      language: "auto",
-      apiUrl: process?.env?.VUE_APP_LANGUAGE_TOOL_URL + "check",
+      apiUrl: "/api/grammar",
       automaticMode: true,
       documentId: undefined,
     };
@@ -405,11 +401,11 @@ export const LanguageTool = Extension.create<
           dispatch(
             tr
               .setMeta(
-                LanguageToolHelpingWords.MatchRangeUpdatedTransactionName,
+                GrammarCheckerOperations.MatchRangeUpdatedTransactionName,
                 true
               )
               .setMeta(
-                LanguageToolHelpingWords.MatchUpdatedTransactionName,
+                GrammarCheckerOperations.MatchUpdatedTransactionName,
                 true
               )
           );
@@ -441,7 +437,7 @@ export const LanguageTool = Extension.create<
 
     return [
       new Plugin({
-        key: new PluginKey("languagetoolPlugin"),
+        key: new PluginKey("gramrfixrPlugin"),
         props: {
           decorations(state) {
             return this.getState(state);
@@ -475,14 +471,14 @@ export const LanguageTool = Extension.create<
             if (!isLanguageToolActive) return DecorationSet.empty;
 
             const matchUpdated = tr.getMeta(
-              LanguageToolHelpingWords.MatchUpdatedTransactionName
+              GrammarCheckerOperations.MatchUpdatedTransactionName
             );
             const matchRangeUpdated = tr.getMeta(
-              LanguageToolHelpingWords.MatchRangeUpdatedTransactionName
+              GrammarCheckerOperations.MatchRangeUpdatedTransactionName
             );
 
             const loading = tr.getMeta(
-              LanguageToolHelpingWords.LoadingTransactionName
+              GrammarCheckerOperations.LoadingTransactionName
             );
 
             if (loading) this.storage.loading = true;
@@ -493,7 +489,7 @@ export const LanguageTool = Extension.create<
             if (matchRangeUpdated) this.storage.matchRange = matchRange;
 
             const languageToolDecorations = tr.getMeta(
-              LanguageToolHelpingWords.LanguageToolTransactionName
+              GrammarCheckerOperations.MainTransactionName
             );
 
             if (languageToolDecorations) return decorationSet;
