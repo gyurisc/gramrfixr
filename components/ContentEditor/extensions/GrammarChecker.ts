@@ -450,7 +450,6 @@ export const GramrFixr = Extension.create<GramrFixrOptions, GramrFixrStorage>({
           handlePaste(view) {
             const { docChanged } = view.state.tr;
 
-            debugger;
             if (docChanged) debouncedProofreadAndDecorate(view.state.tr.doc);
 
             return false;

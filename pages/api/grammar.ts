@@ -15,17 +15,20 @@ type Correction = {
   original: string;
   corrected: string;
   offset: number;
+  length?: number;
 };
 
 type Data = {
-  result?: Correction[];
+  result?: {
+    corrections: Correction[];
+  };
   error?: string;
 };
 
 function generatePrompt(message: string) {
   return `Pretend that you are an English Grammar teacher. 
     Correct the grammatical mistakes in this text by replying in JSON. 
-    The JSON should contain a corrections array and each correction should contain the original word that needs to be corrected, and the recommended correction for the word as well. Include offset position of orignal word as well. 
+    The JSON should contain a corrections array and each correction should contain the original word that needs to be corrected, and the recommended correction for the word as well.
     The output should be json. 
     
     Here is my text: ${message}.`;
@@ -64,7 +67,31 @@ export default async function handler(
     ).toString();
     const response = JSON.parse(response_content);
 
-    return res.status(200).json({ result: response });
+    const finalResponse: Correction[] = [];
+    response?.corrections?.forEach((correction: Correction) => {
+      // find all matching words with offset position
+      const offsets = [
+        ...content.matchAll(new RegExp(correction.original, "gi")),
+      ].map((a) => a.index);
+      if (offsets.length) {
+        // create a new correction object with offset position
+        offsets.forEach((offset) => {
+          const newCorrectionObject: Correction = {
+            original: correction.original,
+            corrected: correction.corrected,
+            offset,
+            length: correction.original.length,
+          };
+          finalResponse.push(newCorrectionObject);
+        });
+      }
+    });
+
+    return res.status(200).json({
+      result: {
+        corrections: finalResponse,
+      },
+    });
   } catch (error: any) {
     if (error.response) {
       return res.status(error?.response?.status || defaultErrorStatus).json({
