@@ -5,79 +5,14 @@ import { Node as PMNode } from "prosemirror-model";
 import { Plugin, PluginKey, Transaction } from "prosemirror-state";
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 
-// *************** TYPES *****************
-export interface Software {
-  name: string;
-  version: string;
-  buildDate: string;
-  apiVersion: number;
-  premium: boolean;
-  premiumHint: string;
-  status: string;
-}
-
-export interface Warnings {
-  incompleteResults: boolean;
-}
-
-export interface DetectedLanguage {
-  name: string;
-  code: string;
-  confidence: number;
-}
-
-export interface Language {
-  name: string;
-  code: string;
-  detectedLanguage: DetectedLanguage;
-}
-
-export interface Replacement {
-  value: string;
-}
-
-export interface Context {
-  text: string;
-  offset: number;
-  length: number;
-}
-
-export interface Type {
-  typeName: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-}
-
-export interface Rule {
-  id: string;
-  description: string;
-  issueType: string;
-  category: Category;
-}
-
-export interface Match {
-  message: string;
-  shortMessage: string;
-  replacements: Replacement[];
-  offset: number;
-  length: number;
-  context: Context;
-  sentence: string;
-  type: Type;
-  rule: Rule;
-  ignoreForIncompleteSentence: boolean;
-  contextForSureMatch: number;
-}
-
-export interface LanguageToolResponse {
-  software: Software;
-  warnings: Warnings;
-  language: Language;
-  matches: Match[];
-}
+import {
+  LanguageToolOptions,
+  LanguageToolStorage,
+  LanguageToolResponse,
+  Match,
+  TextNodesWithPosition,
+  Range,
+} from "./GrammarChecker.types";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -100,35 +35,15 @@ declare module "@tiptap/core" {
   }
 }
 
-interface TextNodesWithPosition {
-  text: string;
-  from: number;
-  to: number;
-}
-
-interface LanguageToolOptions {
-  language: string;
-  apiUrl: string;
-  automaticMode: boolean;
-  documentId: string | number | undefined;
-}
-
-export interface Range {
-  from: number;
-  to: number;
-}
-
-interface LanguageToolStorage {
-  match?: Match | undefined | null;
-  loading?: boolean;
-  matchRange?: Range | undefined | null;
-  active: boolean;
-}
-// *************** OVER: TYPES *****************
-
 let editorView: EditorView;
-
 let decorationSet: DecorationSet;
+let extensionDocId: string | number;
+let apiUrl = "";
+let textNodesWithPosition: TextNodesWithPosition[] = [];
+let match: Match | undefined | null = undefined;
+let matchRange: Range | undefined | null;
+let proofReadInitially = false;
+let isLanguageToolActive = true;
 
 const db = new Dexie("LanguageToolIgnoredSuggestions");
 
@@ -139,20 +54,6 @@ db.version(1).stores({
     documentId
   `,
 });
-
-let extensionDocId: string | number;
-
-let apiUrl = "";
-
-let textNodesWithPosition: TextNodesWithPosition[] = [];
-
-let match: Match | undefined | null = undefined;
-
-let matchRange: Range | undefined | null;
-
-let proofReadInitially = false;
-
-let isLanguageToolActive = true;
 
 export enum LanguageToolHelpingWords {
   LanguageToolTransactionName = "languageToolTransaction",

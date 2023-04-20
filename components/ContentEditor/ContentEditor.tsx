@@ -1,14 +1,16 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { Editor } from "@tiptap/core";
 import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useRef, useState } from "react";
 
 import LoadingDots from "../LoadingDots";
-
-// Custom extensions
-import { LanguageTool, LanguageToolHelpingWords, Match } from "./extensions";
+import {
+  LanguageTool,
+  LanguageToolHelpingWords,
+} from "./extensions/GrammarChecker";
+import { Match, Range } from "./extensions/GrammarChecker.types";
 
 const defaultContent = `<p>Biology is a really unique scient to study. There are alott of different aspects to it, such as ecology, genetics, and physiology. One of the most interesitng things to learn about in biology is animals and the way they behave. For example, did you know that some birds give hugs to their babies to keep them warm? That's so cute!</p>
 
@@ -22,7 +24,7 @@ const ContentEditor = () => {
       StarterKit,
       LanguageTool.configure({
         automaticMode: true,
-        documentId: "1",
+        documentId: "gramrfixr-v1",
         apiUrl: "https://api.languagetool.org/v2/check", // replace this with your actual url
       }),
     ],
@@ -92,7 +94,7 @@ const ContentEditor = () => {
     );
   };
   const match = useRef<Match | null>(null);
-  const matchRange = useRef<{ from: number; to: number } | null>(null);
+  const matchRange = useRef<Range | null>(null);
   const loading = useRef(false);
   const updateMatch = (editor: Editor) => {
     match.current = editor.storage.languagetool.match;

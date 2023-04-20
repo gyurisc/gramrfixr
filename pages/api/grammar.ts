@@ -14,6 +14,7 @@ const openai = new OpenAIApi(configuration);
 type Correction = {
   original: string;
   corrected: string;
+  offset: number;
 };
 
 type Data = {
@@ -24,7 +25,7 @@ type Data = {
 function generatePrompt(message: string) {
   return `Pretend that you are an English Grammar teacher. 
     Correct the grammatical mistakes in this text by replying in JSON. 
-    The JSON should contain a corrections array and each correction should contain the original word that needs to be corrected, and the recommended correction for the word as well. 
+    The JSON should contain a corrections array and each correction should contain the original word that needs to be corrected, and the recommended correction for the word as well. Include offset position of orignal word as well. 
     The output should be json. 
     
     Here is my text: ${message}.`;
