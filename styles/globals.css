@@ -1,3 +1,47 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.ProseMirror .lt {
+  border-bottom: 2px solid #e86a69;
+  transition: background-color 0.25s ease-in-out;
+}
+
+.ProseMirror .lt:hover {
+  background: rgba(232, 106, 105, 0.2);
+}
+
+/* .ProseMirror .lt-style {
+  border-bottom: 2px solid #9d8eff;
+}
+
+.ProseMirror .lt-style:hover {
+  background: rgba(157, 142, 255, 0.2) !important;
+}
+
+.ProseMirror .lt-typographical,
+.ProseMirror .lt-grammar {
+  border-bottom: 2px solid #eeb55c;
+}
+
+.ProseMirror .lt-typographical:hover,
+.ProseMirror .lt-grammar:hover {
+  background: rgba(238, 181, 92, 0.2) !important;
+} */
+
+.ProseMirror .lt-misspelling {
+  border-bottom: 2px solid #e86a69;
+}
+.ProseMirror .lt-misspelling:hover {
+  background: rgba(232, 106, 105, 0.2) !important;
+}
+
+.ProseMirror-focused {
+  outline: none !important;
+}
+
+.bubble-menu {
+  box-shadow: 0.260636px 6.99515px 11px rgba(0, 0, 0, 0.08),
+    0.153463px 4.11874px 5.7376px rgba(0, 0, 0, 0.057856),
+    0.0316934px 0.85061px 1.1792px rgba(0, 0, 0, 0.035072);
+}
