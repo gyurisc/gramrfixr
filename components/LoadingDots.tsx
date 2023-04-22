@@ -3,24 +3,23 @@ import styles from "../styles/loading-dots.module.css";
 // source: https://github.com/Nutlope/twitterbio
 
 const LoadingDots = ({
-    color = "#000",
-    style = "small",
+  color = "#000",
+  style = "small",
 }: {
-    color: string;
-    style: string;
+  color: string;
+  style: string;
 }) => {
-
-    return (
-        <span className={style == "small" ? styles.loading2 : styles.loading}>
-            <span style={{ backgroundColor: color }} />
-            <span style={{ backgroundColor: color }} />
-            <span style={{ backgroundColor: color }} />
-        </span>
-    )
-}
+  return (
+    <span className={style == "small" ? styles.loading2 : styles.loading}>
+      <span style={{ backgroundColor: color }} />
+      <span style={{ backgroundColor: color }} />
+      <span style={{ backgroundColor: color }} />
+    </span>
+  );
+};
 
 export default LoadingDots;
 
 LoadingDots.defaultProps = {
-    style: "small",
+  style: "small",
 };
