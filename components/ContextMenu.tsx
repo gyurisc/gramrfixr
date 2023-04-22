@@ -13,7 +13,8 @@ const ContextMenu = ({ x, y, corrected }: { x: number, y: number, corrected: str
     };
 
     return (
-        <div style={menuStyle}>
+        // <div style={menuStyle}>
+        <div>
             <div>
                 Did you mean {corrected}?
             </div>
