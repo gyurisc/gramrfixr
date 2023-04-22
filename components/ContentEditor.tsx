@@ -9,14 +9,6 @@ import {
     Calendar
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuTrigger,
-} from "@/components/ui/context-menu"
-
 
 interface HighlightedWordProps {
     key: number;
