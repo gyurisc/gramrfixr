@@ -3,6 +3,7 @@ import Head from "next/head";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ContentEditor from "@/components/ContentEditor/ContentEditor";
+import HighlightedWord from "@/components/HighlightedWord";
 
 export default function Home() {
   return (
@@ -19,6 +20,7 @@ export default function Home() {
       <Header />
       <main>
         <ContentEditor />
+        <HighlightedWord original="title" corrected="title" />
       </main>
       <Footer />
     </div>
