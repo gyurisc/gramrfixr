@@ -194,7 +194,7 @@ const proofreadAndDecorateWholeDoc = async (
       replacements: [{ value: match.corrected }],
       offset: match.offset,
       length: match.length,
-      message: "Possible mistake found.",
+      message: "Correct your spelling.",
     };
 
     if (extensionDocId) {
