@@ -106,17 +106,15 @@ export default async function handler(
 
       if (offsets.length) {
         // create a new correction object with offset position
-        const corrections = offsets.map((offset) => {
+        for (const offset of offsets) {
           const newCorrectionObject: Correction = {
             original: correction.original,
             corrected: correction.corrected,
             offset: offset + 1,
             length: correction.original.length,
           };
-          return newCorrectionObject;
-        });
-
-        finalResponse.push(...corrections);
+          finalResponse.push(newCorrectionObject);
+        }
       }
     }
 

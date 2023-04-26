@@ -1,4 +1,4 @@
-interface Replacement {
+export interface Replacement {
   value: string;
 }
 
