@@ -1,16 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Editor } from "@tiptap/core";
 import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { Trash2 } from "lucide-react";
 
 import LoadingDots from "../LoadingDots";
 import {
   GrammarChecker,
   GrammarCheckerOperations,
 } from "./extensions/GrammarChecker";
-import { Match, Range } from "./extensions/GrammarChecker.types";
+import { Match, Range, Replacement } from "./extensions/GrammarChecker.types";
 
 const defaultContent = `<p>Biology is a really unique scient to study. There are alott of different aspects to it, such as ecology, genetics, and physiology. One of the most interesitng things to learn about in biology is animals and the way they behave. For example, did you know that some birds give hugs to their babies to keep them warm? That's so cute!</p>
 
@@ -84,20 +85,23 @@ const ContentEditor = () => {
       }
     } catch (err: any) {
       alert("Failed to process your request");
+      // const dummyResponse = [
+      //   { original: "scient", corrected: "science", length: 6, offset: 28 },
+      //   { original: "alott", corrected: "a lot", length: 5, offset: 55 },
+      //   {
+      //     original: "interesitng",
+      //     corrected: "interesting",
+      //     length: 11,
+      //     offset: 148,
+      //   },
+      // ];
+      // editor?.commands.proofread(dummyResponse);
     } finally {
       setIsLoading(false);
     }
   };
 
   // Grammar checking extension
-  const shouldShow = (editor: Editor) => {
-    const match = editor.storage.grammarChecker.match;
-    const matchRange = editor.storage.grammarChecker.matchRange;
-    const { from, to } = editor.state.selection;
-    return (
-      !!match && !!matchRange && matchRange.from <= from && to <= matchRange.to
-    );
-  };
   const match = useRef<Match | null>(null);
   const matchRange = useRef<Range | null>(null);
   const loading = useRef(false);
@@ -108,11 +112,36 @@ const ContentEditor = () => {
 
   const replacements = match.current?.replacements || [];
   const matchMessage = match.current?.message || "No Message";
-  const acceptSuggestion = (sug: any) => {
-    if (matchRange?.current) {
-      editor?.commands.insertContentAt(matchRange?.current, sug.value);
+
+  const shouldShow = useCallback(
+    (editor: Editor) => {
+      const match = editor.storage.grammarChecker.match;
+      const matchRange = editor.storage.grammarChecker.matchRange;
+      // const { from, to } = editor.state.selection;
+
+      // return (
+      //   !!match &&
+      //   !!matchRange &&
+      //   matchRange?.from <= from &&
+      //   to <= matchRange?.to
+      // );
+
+      return !!match && !!matchRange;
+    },
+    [match, matchRange, editor]
+  );
+
+  const acceptSuggestion = (suggestion: Replacement) => {
+    if (suggestion.value && editor?.state.selection) {
+      const { from, to } = editor?.state.selection;
+      const range = { from, to };
+      const value = suggestion.value;
+
+      editor?.commands?.deleteRange(range);
+      editor?.commands.insertContentAt(range.from, value);
     }
   };
+
   const ignoreSuggestion = () =>
     editor?.commands.ignoreGrammarCheckerSuggestion();
 
@@ -126,10 +155,10 @@ const ContentEditor = () => {
             placement: "bottom-start",
             animation: "fade",
           }}
-          className="bubble-menu w-[300px] rounded-md bg-white p-4"
+          className="bubble-menu w-[200px] rounded-md bg-white"
           shouldShow={({ editor }) => shouldShow(editor)}
         >
-          <div className="mb-2 flex items-center justify-between">
+          {/* <div className="mb-2 flex items-center justify-between">
             <p className="text-sm font-bold text-stone-900">{matchMessage}</p>
             <button
               className="cursor-pointer rounded bg-stone-100 p-1 hover:bg-stone-200"
@@ -161,6 +190,28 @@ const ContentEditor = () => {
                 {replacement.value}
               </button>
             ))}
+          </div> */}
+
+          <div className="absolute left-0 mt-2 w-[200px] rounded-[6px] bg-white shadow-md">
+            <h3 className="border-b border-stone-100 px-3 py-2 font-bold">
+              {matchMessage}
+            </h3>
+            {replacements?.map((replacement: any, i: number) => (
+              <div
+                className="cursor-pointer px-3 py-2 font-bold text-emerald-500 outline-none hover:bg-emerald-500 hover:text-white"
+                onClick={() => acceptSuggestion(replacement)}
+                key={i + replacement.value}
+              >
+                {replacement.value}
+              </div>
+            ))}
+            <div
+              onClick={ignoreSuggestion}
+              className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:rounded-b-md hover:bg-stone-100"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Dismiss</span>
+            </div>
           </div>
         </BubbleMenu>
       ) : null}
