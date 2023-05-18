@@ -85,17 +85,6 @@ const ContentEditor = () => {
       }
     } catch (err: any) {
       alert("Failed to process your request");
-      // const dummyResponse = [
-      //   { original: "scient", corrected: "science", length: 6, offset: 28 },
-      //   { original: "alott", corrected: "a lot", length: 5, offset: 55 },
-      //   {
-      //     original: "interesitng",
-      //     corrected: "interesting",
-      //     length: 11,
-      //     offset: 148,
-      //   },
-      // ];
-      // editor?.commands.proofread(dummyResponse);
     } finally {
       setIsLoading(false);
     }
